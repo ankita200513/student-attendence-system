@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AttendX — Student Attendance System</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1e2530;
+    --border: #2a3441;
+    --accent: #00d4aa;
+    --accent2: #7c6af7;
+    --danger: #ff5c5c;
+    --warn: #ffb347;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Sora', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    background: radial-gradient(ellipse at 20% 50%, #0d2e26 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, #1a1040 0%, transparent 60%),
+                var(--bg);
+  }
+  .login-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 40px; width: 380px;
+    box-shadow: 0 24px 64px rgba(0,0,0,.5);
+  }
+  .login-logo { display:flex; align-items:center; gap:10px; margin-bottom:28px; }
+  .login-logo .dot { width:32px; height:32px; background:var(--accent); border-radius:8px;
+    display:grid; place-items:center; font-weight:700; color:#000; font-size:14px; }
+  .login-logo span { font-size:22px; font-weight:700; letter-spacing:-0.5px; }
+  .login-logo span em { color:var(--accent); font-style:normal; }
+  .login-card h2 { font-size:15px; color:var(--muted); font-weight:400; margin-bottom:28px; }
+  .field { margin-bottom:16px; }
+  .field label { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; display:block; margin-bottom:6px; }
+  .field input, .field select {
+    width:100%; background:var(--surface2); border:1px solid var(--border);
+    color:var(--text); border-radius:8px; padding:10px 14px; font-family:inherit; font-size:14px;
+    outline:none; transition:border .2s;
+  }
+  .field input:focus, .field select:focus { border-color:var(--accent); }
+  .field select option { background:var(--surface2); }
+  .btn {
+    display:inline-flex; align-items:center; gap:6px; padding:10px 18px;
+    border-radius:8px; font-family:inherit; font-size:14px; font-weight:500;
+    cursor:pointer; border:none; transition:all .15s;
+  }
+  .btn-primary { background:var(--accent); color:#000; width:100%; justify-content:center; font-size:15px; padding:12px; }
+  .btn-primary:hover { background:#00bfa0; }
+  .btn-ghost { background:transparent; border:1px solid var(--border); color:var(--text); }
+  .btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-danger { background:#ff5c5c22; border:1px solid #ff5c5c44; color:var(--danger); }
+  .btn-danger:hover { background:#ff5c5c33; }
+  .btn-sm { padding:6px 12px; font-size:12px; }
+  .demo-hint { margin-top:18px; background:var(--surface2); border-radius:8px; padding:12px; }
+  .demo-hint p { font-size:11px; color:var(--muted); margin-bottom:6px; }
+  .demo-hint code { font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--accent); }
+
+  /* ── APP SHELL ── */
+  #app { display:none; min-height:100vh; }
+  .shell { display:flex; min-height:100vh; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width:220px; background:var(--surface); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; z-index:100;
+    transition:transform .3s;
+  }
+  .sidebar-brand { padding:20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+  .sidebar-brand .dot { width:28px; height:28px; background:var(--accent); border-radius:6px;
+    display:grid; place-items:center; font-weight:700; color:#000; font-size:12px; flex-shrink:0; }
+  .sidebar-brand span { font-size:16px; font-weight:700; }
+  .sidebar-brand span em { color:var(--accent); font-style:normal; }
+  .sidebar-user { padding:14px 16px; border-bottom:1px solid var(--border); }
+  .sidebar-user .role-badge { font-size:10px; text-transform:uppercase; letter-spacing:.08em; padding:2px 8px;
+    border-radius:20px; font-weight:600; }
+  .role-admin { background:#7c6af733; color:var(--accent2); }
+  .role-teacher { background:#00d4aa22; color:var(--accent); }
+  .role-student { background:#ffb34722; color:var(--warn); }
+  .sidebar-user .name { font-size:13px; font-weight:600; margin-top:6px; }
+  nav { flex:1; padding:10px 8px; overflow-y:auto; }
+  .nav-item {
+    display:flex; align-items:center; gap:10px; padding:9px 12px;
+    border-radius:8px; cursor:pointer; font-size:13px; color:var(--muted);
+    transition:all .15s; margin-bottom:2px;
+  }
+  .nav-item:hover { background:var(--surface2); color:var(--text); }
+  .nav-item.active { background:var(--accent)18; color:var(--accent); }
+  .nav-item .icon { width:18px; text-align:center; font-size:16px; }
+  .nav-section { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);
+    padding:10px 12px 4px; margin-top:4px; }
+  .sidebar-footer { padding:14px; border-top:1px solid var(--border); }
+  .logout-btn { display:flex; align-items:center; gap:8px; padding:9px 12px;
+    border-radius:8px; cursor:pointer; font-size:13px; color:var(--muted); transition:all .15s; }
+  .logout-btn:hover { background:#ff5c5c18; color:var(--danger); }
+
+  /* ── MAIN CONTENT ── */
+  .main { margin-left:220px; flex:1; padding:28px; }
+  .page { display:none; }
+  .page.active { display:block; }
+  .page-header { margin-bottom:24px; }
+  .page-header h1 { font-size:22px; font-weight:700; letter-spacing:-0.3px; }
+  .page-header p { color:var(--muted); font-size:13px; margin-top:4px; }
+
+  /* ── STAT CARDS ── */
+  .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:24px; }
+  .stat-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px; position:relative; overflow:hidden;
+  }
+  .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+  .stat-card.green::before { background:var(--accent); }
+  .stat-card.purple::before { background:var(--accent2); }
+  .stat-card.orange::before { background:var(--warn); }
+  .stat-card.red::before { background:var(--danger); }
+  .stat-card .label { font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:8px; }
+  .stat-card .value { font-size:32px; font-weight:700; font-family:'JetBrains Mono',monospace; line-height:1; }
+  .stat-card .sub { font-size:12px; color:var(--muted); margin-top:6px; }
+
+  /* ── TABLE ── */
+  .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .table-toolbar { padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--border); gap:10px; flex-wrap:wrap; }
+  .table-toolbar h3 { font-size:14px; font-weight:600; }
+  .search-box { display:flex; align-items:center; gap:8px; background:var(--surface2);
+    border:1px solid var(--border); border-radius:8px; padding:7px 12px; min-width:200px; }
+  .search-box input { background:transparent; border:none; outline:none; color:var(--text); font-size:13px; font-family:inherit; flex:1; }
+  .search-box span { color:var(--muted); font-size:14px; }
+  table { width:100%; border-collapse:collapse; }
+  th { padding:10px 16px; font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--muted); text-align:left; border-bottom:1px solid var(--border); background:var(--surface2); }
+  td { padding:12px 16px; font-size:13px; border-bottom:1px solid var(--border)88; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:var(--surface2); }
+  .badge { font-size:11px; padding:3px 9px; border-radius:20px; font-weight:500; display:inline-block; }
+  .badge-present { background:#00d4aa22; color:var(--accent); }
+  .badge-absent { background:#ff5c5c22; color:var(--danger); }
+  .badge-class { background:var(--surface2); border:1px solid var(--border); color:var(--muted); }
+
+  /* ── ATTENDANCE GRID ── */
+  .att-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; margin-top:16px; }
+  .att-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px; display:flex; align-items:center; gap:14px;
+  }
+  .att-avatar { width:40px; height:40px; border-radius:50%; display:grid; place-items:center;
+    font-weight:700; font-size:15px; flex-shrink:0; }
+  .att-card .info { flex:1; min-width:0; }
+  .att-card .sname { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .att-card .roll { font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+  .att-toggle { display:flex; border-radius:6px; overflow:hidden; border:1px solid var(--border); flex-shrink:0; }
+  .att-toggle button { padding:5px 10px; background:transparent; border:none; cursor:pointer;
+    font-size:11px; font-weight:600; font-family:inherit; color:var(--muted); transition:all .15s; }
+  .att-toggle button.present-on { background:#00d4aa22; color:var(--accent); }
+  .att-toggle button.absent-on { background:#ff5c5c22; color:var(--danger); }
+
+  /* ── FORM ── */
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .modal-overlay {
+    display:none; position:fixed; inset:0; background:#00000088; z-index:200;
+    align-items:center; justify-content:center;
+  }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:28px; width:460px; max-width:90vw; }
+  .modal h3 { font-size:16px; font-weight:700; margin-bottom:20px; }
+  .modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+
+  /* ── REPORTS ── */
+  .report-header { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-bottom:20px; }
+  .progress-bar { height:6px; background:var(--surface2); border-radius:3px; overflow:hidden; margin-top:4px; }
+  .progress-fill { height:100%; border-radius:3px; background:var(--accent); transition:width .4s; }
+  .progress-fill.warn { background:var(--warn); }
+  .progress-fill.danger { background:var(--danger); }
+
+  /* ── TOAST ── */
+  #toast { position:fixed; bottom:24px; right:24px; background:var(--surface);
+    border:1px solid var(--border); border-radius:10px; padding:12px 18px;
+    font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.4); transform:translateY(80px);
+    opacity:0; transition:all .3s; z-index:999; max-width:300px; }
+  #toast.show { transform:translateY(0); opacity:1; }
+  #toast.success { border-color:var(--accent); }
+  #toast.error { border-color:var(--danger); }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:700px){
+    .sidebar { transform:translateX(-100%); }
+    .main { margin-left:0; padding:16px; }
+    .form-grid { grid-template-columns:1fr; }
+    .stats-grid { grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="dot">A</div>
+      <span>Attend<em>X</em></span>
+    </div>
+    <h2>Sign in to your account</h2>
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="login-user" placeholder="Enter username"/>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="Enter password"/>
+    </div>
+    <div class="field">
+      <label>Role</label>
+      <select id="login-role">
+        <option value="admin">Administrator</option>
+        <option value="teacher">Teacher</option>
+        <option value="student">Student</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">Sign In →</button>
+    <div class="demo-hint">
+      <p>Demo credentials (any password works):</p>
+      <code>admin / teacher / student</code>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="shell">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="dot">A</div>
+        <span>Attend<em>X</em></span>
+      </div>
+      <div class="sidebar-user">
+        <span class="role-badge" id="sb-role-badge">Admin</span>
+        <div class="name" id="sb-name">John Admin</div>
+      </div>
+      <nav id="sidebar-nav"></nav>
+      <div class="sidebar-footer">
+        <div class="logout-btn" onclick="doLogout()">⬡ &nbsp; Sign out</div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <!-- DASHBOARD -->
+      <div class="page" id="page-dashboard">
+        <div class="page-header">
+          <h1>Dashboard</h1>
+          <p id="dash-subtitle">Welcome back. Here's what's happening today.</p>
+        </div>
+        <div class="stats-grid" id="dash-stats"></div>
+        <div class="table-wrap">
+          <div class="table-toolbar"><h3>Recent Attendance Activity</h3></div>
+          <table>
+            <thead><tr><th>Student</th><th>Class</th><th>Date</th><th>Status</th></tr></thead>
+            <tbody id="recent-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- STUDENTS -->
+      <div class="page" id="page-students">
+        <div class="page-header">
+          <h1>Student Management</h1>
+          <p>Add, edit, or remove students from the system.</p>
+        </div>
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <h3>All Students</h3>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <div class="search-box">
+                <span>🔍</span>
+                <input type="text" placeholder="Search students…" oninput="filterStudents(this.value)"/>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="openStudentModal()">+ Add Student</button>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Name</th><th>Roll No.</th><th>Class</th><th>Section</th><th>Actions</th></tr></thead>
+            <tbody id="students-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TEACHERS -->
+      <div class="page" id="page-teachers">
+        <div class="page-header">
+          <h1>Teacher Management</h1>
+          <p>Manage teacher accounts and class assignments.</p>
+        </div>
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <h3>All Teachers</h3>
+            <button class="btn btn-primary btn-sm" onclick="openTeacherModal()">+ Add Teacher</button>
+          </div>
+          <table>
+            <thead><tr><th>Name</th><th>Subject</th><th>Email</th><th>Class</th><th>Actions</th></tr></thead>
+            <tbody id="teachers-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MARK ATTENDANCE -->
+      <div class="page" id="page-attendance">
+        <div class="page-header">
+          <h1>Mark Attendance</h1>
+          <p>Select a class and date, then mark each student.</p>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:flex-end;">
+          <div class="field" style="margin:0;min-width:140px;">
+            <label>Class</label>
+            <select id="att-class" onchange="loadAttendance()">
+              <option>10-A</option><option>10-B</option><option>9-A</option><option>9-B</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0;min-width:140px;">
+            <label>Date</label>
+            <input type="date" id="att-date" onchange="loadAttendance()"/>
+          </div>
+          <button class="btn btn-primary" onclick="saveAttendance()">💾 Save Attendance</button>
+        </div>
+        <div class="att-grid" id="att-grid"></div>
+      </div>
+
+      <!-- VIEW ATTENDANCE -->
+      <div class="page" id="page-view-attendance">
+        <div class="page-header">
+          <h1>Attendance Records</h1>
+          <p>Search and view attendance history.</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+          <div class="search-box" style="flex:1;min-width:160px;">
+            <span>🔍</span>
+            <input type="text" placeholder="Search by name or roll no…" oninput="filterAttRec(this.value)" id="att-search"/>
+          </div>
+          <div class="field" style="margin:0;">
+            <select id="att-filter-class" onchange="filterAttRec('')" style="height:38px;padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:13px;">
+              <option value="">All Classes</option>
+              <option>10-A</option><option>10-B</option><option>9-A</option><option>9-B</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Student</th><th>Roll No.</th><th>Class</th><th>Date</th><th>Status</th></tr></thead>
+            <tbody id="att-records-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- REPORTS -->
+      <div class="page" id="page-reports">
+        <div class="page-header">
+          <h1>Attendance Reports</h1>
+          <p>Monthly student-wise summary.</p>
+        </div>
+        <div class="report-header">
+          <div class="field" style="margin:0;">
+            <label>Month</label>
+            <input type="month" id="rep-month" style="height:38px;padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:13px;" onchange="renderReport()"/>
+          </div>
+          <div class="field" style="margin:0;">
+            <select id="rep-class" onchange="renderReport()" style="height:38px;padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:13px;">
+              <option value="">All Classes</option>
+              <option>10-A</option><option>10-B</option><option>9-A</option><option>9-B</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost" onclick="toast('PDF export coming soon!','success')">⬇ Export PDF</button>
+          <button class="btn btn-ghost" onclick="toast('Excel export coming soon!','success')">⬇ Export Excel</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Student</th><th>Class</th><th>Working Days</th><th>Present</th><th>Absent</th><th>Attendance %</th></tr></thead>
+            <tbody id="report-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MY ATTENDANCE (student) -->
+      <div class="page" id="page-my-attendance">
+        <div class="page-header">
+          <h1>My Attendance</h1>
+          <p>Your personal attendance record.</p>
+        </div>
+        <div class="stats-grid" id="my-stats"></div>
+        <div class="table-wrap" style="margin-top:0;">
+          <table>
+            <thead><tr><th>Date</th><th>Class</th><th>Status</th></tr></thead>
+            <tbody id="my-att-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- MODAL: Add Student -->
+<div class="modal-overlay" id="student-modal">
+  <div class="modal">
+    <h3 id="student-modal-title">Add Student</h3>
+    <div class="form-grid">
+      <div class="field"><label>Full Name</label><input type="text" id="s-name" placeholder="e.g. Priya Sharma"/></div>
+      <div class="field"><label>Roll Number</label><input type="text" id="s-roll" placeholder="e.g. 2024001"/></div>
+      <div class="field"><label>Class</label>
+        <select id="s-class"><option>10-A</option><option>10-B</option><option>9-A</option><option>9-B</option></select>
+      </div>
+      <div class="field"><label>Section</label><input type="text" id="s-section" placeholder="e.g. A"/></div>
+      <div class="field"><label>Email (optional)</label><input type="email" id="s-email" placeholder="student@example.com"/></div>
+      <div class="field"><label>Contact (optional)</label><input type="text" id="s-contact" placeholder="+91 …"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('student-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStudent()">Save Student</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add Teacher -->
+<div class="modal-overlay" id="teacher-modal">
+  <div class="modal">
+    <h3>Add Teacher</h3>
+    <div class="form-grid">
+      <div class="field"><label>Full Name</label><input type="text" id="t-name" placeholder="e.g. Rahul Mehta"/></div>
+      <div class="field"><label>Email</label><input type="email" id="t-email" placeholder="teacher@school.com"/></div>
+      <div class="field"><label>Subject</label><input type="text" id="t-subject" placeholder="e.g. Mathematics"/></div>
+      <div class="field"><label>Assigned Class</label>
+        <select id="t-class"><option>10-A</option><option>10-B</option><option>9-A</option><option>9-B</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('teacher-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTeacher()">Save Teacher</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+let currentRole = 'admin';
+let currentUser = '';
+
+const students = [
+  { id:1, name:'Priya Sharma',   roll:'2024001', cls:'10-A', section:'A', email:'priya@demo.com' },
+  { id:2, name:'Arjun Patel',    roll:'2024002', cls:'10-A', section:'A', email:'arjun@demo.com' },
+  { id:3, name:'Sneha Rao',      roll:'2024003', cls:'10-B', section:'B', email:'sneha@demo.com' },
+  { id:4, name:'Rohan Gupta',    roll:'2024004', cls:'10-B', section:'B', email:'rohan@demo.com' },
+  { id:5, name:'Anika Singh',    roll:'2024005', cls:'9-A',  section:'A', email:'anika@demo.com' },
+  { id:6, name:'Dev Nair',       roll:'2024006', cls:'9-A',  section:'A', email:'dev@demo.com'   },
+  { id:7, name:'Meera Joshi',    roll:'2024007', cls:'9-B',  section:'B', email:'meera@demo.com' },
+  { id:8, name:'Kabir Khan',     roll:'2024008', cls:'10-A', section:'A', email:'kabir@demo.com' },
+];
+
+const teachers = [
+  { id:1, name:'Rahul Mehta',    subject:'Mathematics', email:'rahul@school.com', cls:'10-A' },
+  { id:2, name:'Sunita Verma',   subject:'Science',     email:'sunita@school.com',cls:'10-B' },
+  { id:3, name:'Amar Sinha',     subject:'English',     email:'amar@school.com',  cls:'9-A'  },
+  { id:4, name:'Pooja Bhatt',    subject:'History',     email:'pooja@school.com', cls:'9-B'  },
+];
+
+// Generate some attendance records for the last 10 days
+const attendance = [];
+const today = new Date();
+students.forEach(st => {
+  for(let d=9; d>=0; d--){
+    const dt = new Date(today); dt.setDate(dt.getDate()-d);
+    const dateStr = dt.toISOString().split('T')[0];
+    const status = Math.random() > 0.2 ? 'present' : 'absent';
+    attendance.push({ studentId: st.id, cls: st.cls, date: dateStr, status });
+  }
+});
+
+let nextStudentId = 9;
+let nextTeacherId = 5;
+let editingStudentId = null;
+
+// ── AUTH ──────────────────────────────────────────────────────────────────
+function doLogin(){
+  const u = document.getElementById('login-user').value.trim() || 'demo';
+  const r = document.getElementById('login-role').value;
+  currentRole = r; currentUser = u || r;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  setupSidebar();
+  navigateTo(r === 'student' ? 'my-attendance' : 'dashboard');
+  updateDashboard();
+}
+function doLogout(){
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+// ── SIDEBAR ───────────────────────────────────────────────────────────────
+const MENUS = {
+  admin: [
+    { id:'dashboard',       icon:'◈', label:'Dashboard'   },
+    { id:'students',        icon:'◉', label:'Students'    },
+    { id:'teachers',        icon:'◎', label:'Teachers'    },
+    { section: 'Attendance' },
+    { id:'attendance',      icon:'✦', label:'Mark Attendance' },
+    { id:'view-attendance', icon:'◇', label:'View Records'   },
+    { id:'reports',         icon:'▦', label:'Reports'        },
+  ],
+  teacher: [
+    { id:'dashboard',       icon:'◈', label:'Dashboard'   },
+    { id:'students',        icon:'◉', label:'My Students' },
+    { section: 'Attendance' },
+    { id:'attendance',      icon:'✦', label:'Mark Attendance' },
+    { id:'view-attendance', icon:'◇', label:'View Records'   },
+    { id:'reports',         icon:'▦', label:'Reports'        },
+  ],
+  student: [
+    { id:'my-attendance',   icon:'◈', label:'My Attendance' },
+    { id:'reports',         icon:'▦', label:'Summary'        },
+  ],
+};
+
+function setupSidebar(){
+  const badge = document.getElementById('sb-role-badge');
+  badge.className = 'role-badge role-' + currentRole;
+  badge.textContent = currentRole.charAt(0).toUpperCase() + currentRole.slice(1);
+  document.getElementById('sb-name').textContent = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
+  const nav = document.getElementById('sidebar-nav');
+  nav.innerHTML = '';
+  (MENUS[currentRole]||MENUS.admin).forEach(item => {
+    if(item.section){
+      nav.innerHTML += `<div class="nav-section">${item.section}</div>`;
+    } else {
+      nav.innerHTML += `<div class="nav-item" id="nav-${item.id}" onclick="navigateTo('${item.id}')">
+        <span class="icon">${item.icon}</span>${item.label}</div>`;
+    }
+  });
+}
+
+function navigateTo(pageId){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pg = document.getElementById('page-' + pageId);
+  if(pg) pg.classList.add('active');
+  const nv = document.getElementById('nav-' + pageId);
+  if(nv) nv.classList.add('active');
+  if(pageId === 'students') renderStudents('');
+  if(pageId === 'teachers') renderTeachers();
+  if(pageId === 'attendance') initAttendance();
+  if(pageId === 'view-attendance') renderAttRecords('');
+  if(pageId === 'reports') renderReport();
+  if(pageId === 'my-attendance') renderMyAttendance();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────
+function updateDashboard(){
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayRecs = attendance.filter(a => a.date === todayStr);
+  const presentToday = todayRecs.filter(a => a.status === 'present').length;
+
+  let statsHtml = '';
+  if(currentRole !== 'student'){
+    statsHtml = `
+      <div class="stat-card green"><div class="label">Total Students</div><div class="value">${students.length}</div><div class="sub">Across all classes</div></div>
+      <div class="stat-card purple"><div class="label">Total Teachers</div><div class="value">${teachers.length}</div><div class="sub">Active staff</div></div>
+      <div class="stat-card orange"><div class="label">Present Today</div><div class="value">${presentToday}</div><div class="sub">Out of ${students.length}</div></div>
+      <div class="stat-card red"><div class="label">Absent Today</div><div class="value">${students.length - presentToday}</div><div class="sub">Flagged for follow-up</div></div>
+    `;
+  }
+  document.getElementById('dash-stats').innerHTML = statsHtml;
+
+  const recent = attendance.slice(-8).reverse();
+  document.getElementById('recent-tbody').innerHTML = recent.map(a => {
+    const st = students.find(s => s.id === a.studentId);
+    return `<tr>
+      <td>${st ? st.name : '—'}</td>
+      <td><span class="badge badge-class">${a.cls}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${a.date}</td>
+      <td><span class="badge badge-${a.status}">${a.status}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── STUDENTS ──────────────────────────────────────────────────────────────
+function renderStudents(filter){
+  const list = students.filter(s =>
+    s.name.toLowerCase().includes(filter.toLowerCase()) ||
+    s.roll.includes(filter)
+  );
+  const canEdit = currentRole === 'admin';
+  document.getElementById('students-tbody').innerHTML = list.map(s => `
+    <tr>
+      <td>${s.name}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${s.roll}</td>
+      <td><span class="badge badge-class">${s.cls}</span></td>
+      <td>${s.section}</td>
+      <td>${canEdit ? `
+        <button class="btn btn-ghost btn-sm" onclick="openStudentModal(${s.id})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.id})">Delete</button>
+      ` : '—'}</td>
+    </tr>
+  `).join('');
+}
+function filterStudents(v){ renderStudents(v); }
+
+function openStudentModal(id){
+  editingStudentId = id || null;
+  document.getElementById('student-modal-title').textContent = id ? 'Edit Student' : 'Add Student';
+  if(id){
+    const s = students.find(x => x.id === id);
+    document.getElementById('s-name').value = s.name;
+    document.getElementById('s-roll').value = s.roll;
+    document.getElementById('s-class').value = s.cls;
+    document.getElementById('s-section').value = s.section;
+    document.getElementById('s-email').value = s.email || '';
+  } else {
+    ['s-name','s-roll','s-section','s-email','s-contact'].forEach(id => document.getElementById(id).value='');
+  }
+  document.getElementById('student-modal').classList.add('open');
+}
+
+function saveStudent(){
+  const name = document.getElementById('s-name').value.trim();
+  const roll = document.getElementById('s-roll').value.trim();
+  if(!name || !roll){ toast('Name and Roll No. are required.','error'); return; }
+  if(editingStudentId){
+    const s = students.find(x => x.id === editingStudentId);
+    s.name = name; s.roll = roll;
+    s.cls = document.getElementById('s-class').value;
+    s.section = document.getElementById('s-section').value;
+    s.email = document.getElementById('s-email').value;
+    toast('Student updated!','success');
+  } else {
+    students.push({ id: nextStudentId++, name, roll,
+      cls: document.getElementById('s-class').value,
+      section: document.getElementById('s-section').value,
+      email: document.getElementById('s-email').value });
+    toast('Student added!','success');
+  }
+  closeModal('student-modal');
+  renderStudents('');
+}
+
+function deleteStudent(id){
+  const idx = students.findIndex(s => s.id === id);
+  if(idx > -1){ students.splice(idx,1); renderStudents(''); toast('Student removed.','success'); }
+}
+
+// ── TEACHERS ──────────────────────────────────────────────────────────────
+function renderTeachers(){
+  document.getElementById('teachers-tbody').innerHTML = teachers.map(t => `
+    <tr>
+      <td>${t.name}</td>
+      <td>${t.subject}</td>
+      <td style="font-size:12px;color:var(--muted);">${t.email}</td>
+      <td><span class="badge badge-class">${t.cls}</span></td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="toast('Edit teacher coming soon!','success')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteTeacher(${t.id})">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openTeacherModal(){ document.getElementById('teacher-modal').classList.add('open'); }
+
+function saveTeacher(){
+  const name = document.getElementById('t-name').value.trim();
+  const email = document.getElementById('t-email').value.trim();
+  const subject = document.getElementById('t-subject').value.trim();
+  const cls = document.getElementById('t-class').value;
+  if(!name){ toast('Name is required.','error'); return; }
+  teachers.push({ id: nextTeacherId++, name, email, subject, cls });
+  closeModal('teacher-modal');
+  renderTeachers();
+  toast('Teacher added!','success');
+}
+
+function deleteTeacher(id){
+  const idx = teachers.findIndex(t => t.id === id);
+  if(idx > -1){ teachers.splice(idx,1); renderTeachers(); toast('Teacher removed.','success'); }
+}
+
+// ── MARK ATTENDANCE ───────────────────────────────────────────────────────
+const attState = {}; // studentId -> 'present'|'absent'
+
+function initAttendance(){
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('att-date').value = today;
+  loadAttendance();
+}
+
+function loadAttendance(){
+  const cls = document.getElementById('att-class').value;
+  const date = document.getElementById('att-date').value;
+  const list = students.filter(s => s.cls === cls);
+  const colors = ['#7c6af7','#00d4aa','#ff5c5c','#ffb347','#3b82f6','#ec4899','#22d3ee','#84cc16'];
+  document.getElementById('att-grid').innerHTML = list.map((s,i) => {
+    const rec = attendance.find(a => a.studentId === s.id && a.date === date);
+    const cur = rec ? rec.status : (attState[s.id] || 'present');
+    attState[s.id] = cur;
+    const col = colors[i % colors.length];
+    const initials = s.name.split(' ').map(x=>x[0]).join('').slice(0,2);
+    return `
+      <div class="att-card" id="att-card-${s.id}">
+        <div class="att-avatar" style="background:${col}22;color:${col};">${initials}</div>
+        <div class="info">
+          <div class="sname">${s.name}</div>
+          <div class="roll">${s.roll}</div>
+        </div>
+        <div class="att-toggle">
+          <button id="p-${s.id}" class="${cur==='present'?'present-on':''}" onclick="markAtt(${s.id},'present')">P</button>
+          <button id="a-${s.id}" class="${cur==='absent'?'absent-on':''}" onclick="markAtt(${s.id},'absent')">A</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function markAtt(id, status){
+  attState[id] = status;
+  document.getElementById('p-'+id).className = status==='present' ? 'present-on' : '';
+  document.getElementById('a-'+id).className = status==='absent' ? 'absent-on' : '';
+}
+
+function saveAttendance(){
+  const cls = document.getElementById('att-class').value;
+  const date = document.getElementById('att-date').value;
+  if(!date){ toast('Please select a date.','error'); return; }
+  const list = students.filter(s => s.cls === cls);
+  list.forEach(s => {
+    const existing = attendance.findIndex(a => a.studentId === s.id && a.date === date);
+    const status = attState[s.id] || 'present';
+    if(existing > -1){ attendance[existing].status = status; }
+    else { attendance.push({ studentId: s.id, cls, date, status }); }
+  });
+  toast(`Attendance saved for ${cls} on ${date}!`, 'success');
+}
+
+// ── VIEW ATTENDANCE ───────────────────────────────────────────────────────
+function renderAttRecords(filter){
+  const cls = document.getElementById('att-filter-class').value;
+  const f = filter || document.getElementById('att-search').value;
+  let recs = [...attendance];
+  if(cls) recs = recs.filter(a => a.cls === cls);
+  if(f) recs = recs.filter(a => {
+    const st = students.find(s => s.id === a.studentId);
+    return st && (st.name.toLowerCase().includes(f.toLowerCase()) || st.roll.includes(f));
+  });
+  recs = recs.slice(-50).reverse();
+  document.getElementById('att-records-tbody').innerHTML = recs.map(a => {
+    const st = students.find(s => s.id === a.studentId);
+    return `<tr>
+      <td>${st ? st.name : '—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${st ? st.roll : '—'}</td>
+      <td><span class="badge badge-class">${a.cls}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${a.date}</td>
+      <td><span class="badge badge-${a.status}">${a.status}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterAttRec(v){ renderAttRecords(v); }
+
+// ── REPORTS ───────────────────────────────────────────────────────────────
+function renderReport(){
+  const now = new Date();
+  const defMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const month = document.getElementById('rep-month').value || defMonth;
+  if(!document.getElementById('rep-month').value) document.getElementById('rep-month').value = defMonth;
+  const cls = document.getElementById('rep-class').value;
+
+  const [yr, mo] = month.split('-').map(Number);
+  const workingDays = 22;
+
+  let list = cls ? students.filter(s => s.cls === cls) : students;
+  document.getElementById('report-tbody').innerHTML = list.map(s => {
+    const recs = attendance.filter(a => {
+      const [y,m] = a.date.split('-').map(Number);
+      return a.studentId === s.id && y === yr && m === mo;
+    });
+    const present = recs.filter(r => r.status === 'present').length || Math.floor(Math.random()*5+15);
+    const absent = workingDays - present;
+    const pct = Math.round((present/workingDays)*100);
+    const fillClass = pct >= 75 ? '' : pct >= 60 ? 'warn' : 'danger';
+    return `<tr>
+      <td>${s.name}</td>
+      <td><span class="badge badge-class">${s.cls}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;">${workingDays}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--accent);">${present}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--danger);">${absent}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;min-width:80px;">
+            <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${pct}%"></div></div>
+          </div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:${pct>=75?'var(--accent)':pct>=60?'var(--warn)':'var(--danger)'};">${pct}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── MY ATTENDANCE (student) ───────────────────────────────────────────────
+function renderMyAttendance(){
+  const myId = 1; // demo student = first student
+  const myRecs = attendance.filter(a => a.studentId === myId);
+  const present = myRecs.filter(r => r.status === 'present').length;
+  const absent = myRecs.filter(r => r.status === 'absent').length;
+  const total = myRecs.length;
+  const pct = total ? Math.round((present/total)*100) : 0;
+
+  document.getElementById('my-stats').innerHTML = `
+    <div class="stat-card green"><div class="label">Present Days</div><div class="value">${present}</div></div>
+    <div class="stat-card red"><div class="label">Absent Days</div><div class="value">${absent}</div></div>
+    <div class="stat-card purple"><div class="label">Attendance %</div><div class="value">${pct}%</div></div>
+  `;
+  document.getElementById('my-att-tbody').innerHTML = myRecs.slice(-15).reverse().map(a => `
+    <tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${a.date}</td>
+      <td><span class="badge badge-class">${a.cls}</span></td>
+      <td><span class="badge badge-${a.status}">${a.status}</span></td>
+    </tr>
+  `).join('');
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+window.addEventListener('click', e => {
+  document.querySelectorAll('.modal-overlay.open').forEach(m => { if(e.target === m) m.classList.remove('open'); });
+});
+
+let toastTimer;
+function toast(msg, type='success'){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 3000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+document.getElementById('att-date') && (document.getElementById('att-date').value = new Date().toISOString().split('T')[0]);
+</script>
+</body>
+</html>
